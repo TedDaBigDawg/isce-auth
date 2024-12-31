@@ -15,12 +15,21 @@ async function bootstrap() {
     })
   );
 
+
   const config = new DocumentBuilder()
-  .setTitle('ISCE AUTH')
-  .setDescription('Authotication for ISCE product')
-  .setVersion('1.0')
-  .addTag('ISCE')
-  .build();
+    .setTitle('ISCE AUTH')
+    .setDescription('Authotication for ISCE product')
+    .setVersion('1.0')
+    .addTag('ISCE')
+    .addBearerAuth(
+      { 
+        type: 'http', 
+        scheme: 'bearer', 
+        bearerFormat: 'JWT' 
+      }, 
+      'JWT-auth' // The name used to reference this auth method in the Swagger UI
+    )
+    .build();
 const document = SwaggerModule.createDocument(app, config);
 SwaggerModule.setup('docs', app, document);
 
