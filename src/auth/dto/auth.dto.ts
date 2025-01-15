@@ -105,25 +105,13 @@ export class UserDto {
   fullname: string;
 
   @Expose()
-  phonenumber: string;
+  phone: string;
+
+  @Expose()
+  dob: Date;
 
   @Expose()
   role: string;
-
-  @Expose()
-  token: string;
-
-  @Expose()
-  lga: string;
-
-  @Expose()
-  nin: string;
-
-  @Expose()
-  location: string;
-
-  @Expose()
-  blacklist: boolean;
 
   @Expose()
   createdAt: Date;
