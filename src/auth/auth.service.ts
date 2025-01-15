@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service'; 
-import { RegisterDto, ResetPasswordDto } from './dto/auth.dto';
+import { RegisterDto, ResetPasswordDto, transformToUserDto } from './dto/auth.dto';
 import { LoginDto } from './dto/auth.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -11,6 +11,7 @@ import { Role, User } from '@prisma/client';
 import { BADFAMILY } from 'dns';
 // import moment from 'moment';
 // import { parse, format } from 'date-fns';
+import { generateCode } from '../utils/utils';
 
 @Injectable()
 export class AuthService {
@@ -19,9 +20,92 @@ export class AuthService {
       private mailService: MailService, 
       private jwt: JwtService) {}
 
+
+      // Step 2: Request Email Verification Code
+  async requestVerifyEmailCode(email: string) {
+    try {
+      const formattedEmail = email.toLowerCase();
+
+      const existingUser = await this.databaseService.user.findUnique({
+        where: { email: formattedEmail },
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('User already exists with this email.');
+      }
+
+      const verifyCode = generateCode(); // Generate a random code
+
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5); // Code expires in 5 minutes
+
+      const emailVerificationRecord = await this.databaseService.emailVerify.upsert({
+        where: { email: formattedEmail },
+        update: { verifyCode, expiresAt, isVerified: false},
+        create: { email: formattedEmail, verifyCode, expiresAt, isVerified: false },
+      });
+
+      // Send the verification code to the user's email
+      await this.mailService.sendVerifyEmail(email, emailVerificationRecord.verifyCode);
+
+      return { success: true, message: 'Email verification code sent to email.' };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to request email verification.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Step 3: Verify Email Code
+  async verifyEmailCode(email: string, code: string) {
+    try {
+      const formattedEmail = email.toLowerCase();
+
+      const existingUser = await this.databaseService.user.findUnique({
+        where: { email: formattedEmail },
+      });
+
+      if (existingUser) {
+        throw new BadRequestException('User already exists with this email.');
+      }
+
+      const verificationRecord = await this.databaseService.emailVerify.findUnique({
+        where: { email: formattedEmail },
+      });
+
+      if (!verificationRecord) {
+        throw new BadRequestException('Invalid email or code.');
+      }
+
+      const currentTime = new Date();
+      if (verificationRecord.expiresAt < currentTime) {
+        throw new BadRequestException('Verification code has expired.');
+      }
+
+      if (verificationRecord.verifyCode !== code) {
+        throw new BadRequestException('Invalid verification code.');
+      }
+
+      const updatedEmailRecord = await this.databaseService.emailVerify.update({
+        where: { email: verificationRecord.email },
+        data: { isVerified: true }
+      })
+
+      return { success: true, message: 'Email verified successfully.', data: updatedEmailRecord };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to verify email.',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+
+
     async signup(dto: RegisterDto) {
         try {
-            const { fullname, email, phone, password, dob } = dto;
+            const { fullname, email, phone, password, confirmpassword, dob } = dto;
 
             const formattedEmail = email.toLowerCase();
 
@@ -31,15 +115,26 @@ export class AuthService {
                 throw new BadRequestException('Email already exists');
             }
 
+            const emailRecord = await this.databaseService.emailVerify.findUnique({
+              where: { email: formattedEmail }
+            })
+      
+            if (!emailRecord || emailRecord.isVerified === false) {
+              throw new BadRequestException('Email is not verified. Verify and try again.')
+            }
+
+            // Check password confirmation
+            if (password !== confirmpassword) {
+              throw new BadRequestException('Passwords do not match.');
+            }
             const hashedPassword = await this.hashPassword(password);
 
             let formattedDob: string;
             let utcDob: Date;
 
-            if (dob instanceof Date) {
+            if (dob) {
               // If already a Date object, format it
               formattedDob = dob.toISOString().split('T')[0];
-            } else {
               // If dob is a string, parse it to a Date
               const parsedDob = new Date(dob);
 
@@ -63,9 +158,12 @@ export class AuthService {
                 }
             });
 
+            // Transform user to DTO for the response
+            const userDto = transformToUserDto(user);
             return {
+              success: true,
               message: 'Sign up successful',
-              user: user,
+              user: userDto,
             }
         } catch (error) {
             throw new HttpException(error.message || 'Invalid token or request', HttpStatus.BAD_REQUEST);    
@@ -216,7 +314,7 @@ export class AuthService {
           // Delete the reset code after successful reset
           await this.databaseService.passwordReset.delete({ where: { id: passwordReset.id } });
     
-          return { message: 'Password has been reset successfully' };
+          return { success: true, message: 'Password has been reset successfully' };
         } catch (error) {
           throw new HttpException(error.message || 'Invalid code or request', HttpStatus.BAD_REQUEST);
         }
@@ -264,7 +362,7 @@ export class AuthService {
           // You can integrate a mail service here (e.g., SendGrid, Nodemailer)
           // await this.mailService.sendResetPasswordEmail(email, token);
     
-          return { message: 'Reset code sent to email' };
+          return { success: true, message: 'Reset code sent to email' };
         } catch (error) {
           throw new HttpException(error.message || 'Unable to process request', HttpStatus.INTERNAL_SERVER_ERROR);
         }

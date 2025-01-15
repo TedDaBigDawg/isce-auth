@@ -37,4 +37,53 @@ export class MailService {
     }
     
   }
+
+
+
+  async sendAdminCodeEmail(to: string, code: string) {
+    try {
+        console.log(process.env.EMAIL_PASS);
+        if (!code) {
+            throw new NotFoundException("Invalid Request");
+        }
+        // const resetLink = `http://localhost:3000/reset-password?code=${resetCode}`;
+        const mailOptions = {
+        from: '"Haulage" osiobeted@gmail.com',
+        to,
+        subject: 'ADMIN REGISTRATION CODE',
+        text: `Here is your Admin Registration Code: ${code}`,
+        html: `<p>Here is your Admin Registration Code ${code} to register your Admin account, it expires in 30 minutes.</p>`,
+        };
+        return await this.transporter.sendMail(mailOptions);
+        
+    } catch (error) {
+        throw new HttpException(error.message || 'Invalid code or request', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+
+    
+    async sendVerifyEmail(to: string, code: string) {
+      try {
+          console.log(process.env.EMAIL_PASS);
+          if (!code) {
+              throw new NotFoundException("Invalid Request");
+          }
+          // const resetLink = `http://localhost:3000/reset-password?code=${resetCode}`;
+          const mailOptions = {
+          from: '"Haulage" osiobeted@gmail.com',
+          to,
+          subject: 'VERIFY EMAIL CODE',
+          text: `Here is your Verify Email Code: ${code}`,
+          html: `<p>Here is your Email Verification Code ${code} to verify your email, it expires in 5 minutes.</p>`,
+          };
+          return await this.transporter.sendMail(mailOptions);
+          
+      } catch (error) {
+          throw new HttpException(error.message || 'Invalid code or request', HttpStatus.BAD_REQUEST);
+      }
+  }
+
+
+  
 }

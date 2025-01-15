@@ -3,6 +3,7 @@ import { CreateAdminUserDto, UpdateUserDto } from './dto/user.dto';
 import { DatabaseService } from '../database/database.service';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import { transformToUserDto } from 'src/auth/dto/auth.dto';
 
 
 @Injectable()
@@ -56,9 +57,12 @@ export class UserService {
                 },
             });
 
+            // Transform user to DTO for the response
+            const userDto = transformToUserDto(newAdminUser);
             return {
+              success: true,
                 message: 'Admin User created successfully',
-                data: newAdminUser 
+                data: userDto 
             };
         } catch (error) {
             throw new HttpException(error.message || 'Failed to create admin  user, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 
@@ -70,7 +74,7 @@ export class UserService {
 
     async getAllUsers({ role, limit = 10, offset = 0 }: { role?: Role, limit?: number, offset?: number }) {
         try {
-          const where = role ? { role } : {};
+          const where = role ? { role } : { deletedAt: null };
     
           const users = await this.databaseService.user.findMany({
             where,
@@ -82,10 +86,13 @@ export class UserService {
             throw new NotFoundException('User not found');
           }
 
+          // Transform user to DTO for the response
+          const userDto = transformToUserDto(users);
 
           return {
+            success: true,
             message: "Fetched users successfully",
-            data: users,
+            data: userDto,
           }
         } catch (error) {
             throw new HttpException(error.message || 'Failed to fetch users, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 
@@ -96,16 +103,19 @@ export class UserService {
     async getUserById(id: string) {
         try {
             const user = await this.databaseService.user.findUnique({
-              where: { id },
+              where: { id, deletedAt: null },
             });
       
             if (!user) {
               throw new NotFoundException(`User with ID ${id} not found`);
             }
       
+            // Transform user to DTO for the response
+            const userDto = transformToUserDto(user);
             return {
+              success: true,
                 message: "User fetched successfully",
-                data: user,
+                data: userDto,
             }
         } catch (error) {
             throw new HttpException(error.message || 'Failed to fetch user, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 
@@ -123,7 +133,7 @@ export class UserService {
 
           
           const existingUser = await this.databaseService.user.findUnique({
-            where: { id },
+            where: { id, deletedAt: null },
           });
     
           if (!existingUser) {
@@ -154,13 +164,17 @@ export class UserService {
           
     
           const updatedUser = await this.databaseService.user.update({
-            where: { id },
+            where: { id, deletedAt: null },
             data: { fullname: fullname, phone: phone, dob: utcDob, email: formattedEmail},
           });
+
+          // Transform user to DTO for the response
+         const userDto = transformToUserDto(updateUserDto);
   
           return {
+            success: true,
             message: "User updated successfully",
-            data: updatedUser,
+            data: userDto,
         }
       } catch (error) {
         throw new HttpException(error.message || 'Failed to update user, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 
@@ -172,7 +186,7 @@ export class UserService {
     async softDeleteUser(id: string) {
       try {
           const user = await this.databaseService.user.findUnique({
-            where: { id },
+            where: { id, deletedAt: null },
           });
     
           if (!user) {
@@ -183,9 +197,12 @@ export class UserService {
             data: { deletedAt: new Date() },
           });
   
+          // Transform user to DTO for the response
+          const userDto = transformToUserDto(deletedUser);
           return {
+            success: true,
             message: "User updated successfully",
-            data: deletedUser,
+            data: userDto,
           }      
         } catch (error) {
         throw new HttpException(error.message || 'Failed to delete user, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 
@@ -208,9 +225,12 @@ export class UserService {
             data: { deletedAt: new Date() },
           });
 
+          // Transform user to DTO for the response
+          const userDto = transformToUserDto(result);
           return {
+            success: true,
             message: `${result.count} users soft deleted successfully.`,
-            data: result,
+            data: userDto,
           };
       } catch (error) {
         throw new HttpException(error.message || 'Failed to delete users, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 
@@ -247,9 +267,12 @@ export class UserService {
             skip: offset || 0,
           });
 
+          // Transform user to DTO for the response
+          const userDto = transformToUserDto(users);
           return {
+            success: true,
             message: 'Users retrieved successfully',
-            data: users,
+            data: userDto,
           };
       } catch (error) {
         throw new HttpException(error.message || 'Failed to fetch users, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 
@@ -264,6 +287,7 @@ export class UserService {
           });
 
           return {
+            success: true,
             message: 'Total user count retrieved successfully',
             data: count,
           };
@@ -280,9 +304,12 @@ export class UserService {
             where: { deletedAt: null },
           });
 
+          // Transform user to DTO for the response
+          const userDto = transformToUserDto(activeUsers);
           return {
+            success: true,
             message: 'Active users retrieved successfully',
-            data: activeUsers,
+            data: userDto,
           };
       } catch (error) {
         throw new HttpException(error.message || 'Failed to get users, Internal server error', HttpStatus.INTERNAL_SERVER_ERROR); 

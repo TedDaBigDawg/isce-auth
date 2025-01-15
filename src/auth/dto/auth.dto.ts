@@ -1,6 +1,27 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Expose, plainToClass } from 'class-transformer';
 import { IsDate, IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
 
+
+export class EmailDto {
+  @ApiProperty({ description: 'User email', example: 'teddy@gmail.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+
+export class VerifyEmailDto {
+  @ApiProperty({ description: 'User email', example: 'teddy@gmail.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+
+  @ApiProperty({ description: 'Verification code', example: '123456' })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+}
 export class RegisterDto {
   @ApiProperty({ description: 'User name', example: 'Elon Musk' })
   @IsNotEmpty()
@@ -27,6 +48,12 @@ export class RegisterDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @ApiProperty({ description: 'Confirm Password', example: 'password123' })
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6)
+  confirmpassword: string;
 }
 
 
@@ -34,7 +61,7 @@ export class RegisterDto {
 
 export class LoginDto {
   
-    @ApiProperty({ description: 'User name', example: 'Elon Musk' })
+    @ApiProperty({ description: 'User email', example: 'elonmusk@gmail.com' })
     @IsEmail()
     @IsNotEmpty()
     email: string;
@@ -64,4 +91,50 @@ export class SendResetTokenDto {
   @IsNotEmpty()
   @IsEmail()
   email: string;
+}
+
+
+export class UserDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  email: string;
+
+  @Expose()
+  fullname: string;
+
+  @Expose()
+  phonenumber: string;
+
+  @Expose()
+  role: string;
+
+  @Expose()
+  token: string;
+
+  @Expose()
+  lga: string;
+
+  @Expose()
+  nin: string;
+
+  @Expose()
+  location: string;
+
+  @Expose()
+  blacklist: boolean;
+
+  @Expose()
+  createdAt: Date;
+
+  @Expose()
+  updatedAt: Date;
+
+  @Expose()
+  deletedAt: Date;
+}
+
+export function transformToUserDto(user: any): UserDto {
+  return plainToClass(UserDto, user, { excludeExtraneousValues: true });
 }

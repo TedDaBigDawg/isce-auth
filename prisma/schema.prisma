@@ -27,6 +27,16 @@ model User {
   deletedAt     DateTime?
 }
 
+model EmailVerify {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  verifyCode String
+  isVerified Boolean @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model PasswordReset {
   id        String   @id @default(uuid())
   userId    String   @unique
@@ -41,10 +51,4 @@ model PasswordReset {
 enum Role {
   USER
   ADMIN
-}
-
-enum UserType {
-  ISCE_ADMIN
-  ADMIN
-  USER
 }
