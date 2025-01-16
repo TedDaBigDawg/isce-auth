@@ -16,7 +16,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://eventnest-slbg.onrender.com'], // Frontend URLs
+    origin: ['http://localhost:3000', 'https://events-nestjs.onrender.com', 'https://isceauth.onrender.com'], // Frontend URLs
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'], // Include 'Authorization' if needed
     credentials: true, // Allow cookies and authorization headers

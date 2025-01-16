@@ -28,10 +28,9 @@ export class UserService {
             let formattedDob: string;
             let utcDob: Date;
 
-            if (dob instanceof Date) {
+            if (dob) {
               // If already a Date object, format it
               formattedDob = dob.toISOString().split('T')[0];
-            } else {
               // If dob is a string, parse it to a Date
               const parsedDob = new Date(dob);
 
@@ -145,10 +144,9 @@ export class UserService {
           }
 
           if(dob) {
-            if (dob instanceof Date) {
+            
               // If already a Date object, format it
               formattedDob = dob.toISOString().split('T')[0];
-            } else {
               // If dob is a string, parse it to a Date
               const parsedDob = new Date(dob);
   
@@ -160,7 +158,6 @@ export class UserService {
   
               console.log('utcDob', utcDob);
             }
-          }
           
     
           const updatedUser = await this.databaseService.user.update({
